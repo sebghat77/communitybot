@@ -1,0 +1,5 @@
+.env
+community.db
+__pycache__/
+*.pyc
+exports/
