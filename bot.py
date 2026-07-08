@@ -449,6 +449,15 @@ class StartOnboardingView(discord.ui.View):
                     f"✅ Your private onboarding channel is ready: {private_channel.mention}",
                     ephemeral=True
                 )
+
+                # If this button was clicked from #welcome, delete that temporary welcome message
+                # so the channel stays clean for the next new user.
+                try:
+                    if getattr(interaction.channel, "name", "") == "welcome":
+                        await interaction.message.delete()
+                except Exception:
+                    pass
+
                 return
 
             # Fallback for DM usage.
@@ -599,10 +608,10 @@ async def get_or_create_text_channel(guild, channel_name, category=None, topic=N
 
 
 async def send_onboarding_to_member(member):
-    # Never post a new message in #welcome when a user joins.
-    # Keep #welcome clean with only one persistent onboarding button.
+    # Create a private onboarding channel immediately.
     private_channel = await get_private_welcome_channel(member.guild, member)
 
+    # Send the actual onboarding entry inside the private channel.
     await private_channel.send(
         f"{member.mention} 👋 Welcome! This private channel is only for your onboarding.\n\n"
         "Please press **Start Onboarding** below.",
@@ -611,7 +620,22 @@ async def send_onboarding_to_member(member):
         allowed_mentions=discord.AllowedMentions(users=True)
     )
 
-    # DM is only a helper link. If DM is closed, the private channel still exists.
+    # Also post a temporary personal onboarding message in #welcome so the new user does not get lost.
+    # This message will be deleted automatically after the user clicks Start Onboarding.
+    welcome = find_channel(member.guild, "welcome")
+    if welcome:
+        try:
+            await welcome.send(
+                f"{member.mention} 👋 Welcome! Please click **Start Onboarding**. "
+                "A private onboarding channel has been created for you.",
+                embed=build_welcome_embed(),
+                view=StartOnboardingView(),
+                allowed_mentions=discord.AllowedMentions(users=True)
+            )
+        except Exception:
+            pass
+
+    # DM is only a helper link.
     try:
         await member.send(
             f"Welcome! I created your private onboarding channel in the server: {private_channel.mention}"
@@ -767,7 +791,7 @@ async def fresh_setup(ctx, confirmation: str = ""):
 @commands.has_permissions(administrator=True)
 async def clean_welcome(ctx):
     await prepare_public_welcome(ctx.guild)
-    await ctx.send("Welcome channel cleaned and refreshed. New users will not create new messages in #welcome.")
+    await ctx.send("Welcome channel cleaned and refreshed. Temporary user welcome messages will be removed after users start onboarding.")
 
 
 @bot.command()
