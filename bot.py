@@ -374,38 +374,52 @@ class StartOnboardingView(discord.ui.View):
 
     @discord.ui.button(label="Start Onboarding", style=discord.ButtonStyle.primary)
     async def start_onboarding(self, interaction: discord.Interaction, button: discord.ui.Button):
-        create_or_touch_user(interaction.user.id, str(interaction.user))
-        log_event(interaction.user.id, str(interaction.user), "onboarding_started")
+        # Answer Discord immediately to avoid "This interaction failed".
+        await interaction.response.defer(ephemeral=True)
 
-        # If the user clicked inside their private welcome channel, continue there.
-        if interaction.guild and getattr(interaction.channel, "name", "").startswith("welcome-"):
-            await interaction.response.send_message(
-                "👋 Great! This onboarding is private and only visible to you and admins.\n\n"
-                "**Step 1/3:** Choose your main interests:",
-                view=InterestSelectView()
-            )
-            return
+        try:
+            create_or_touch_user(interaction.user.id, str(interaction.user))
+            log_event(interaction.user.id, str(interaction.user), "onboarding_started")
 
-        # Otherwise create/find a private welcome channel for this user.
-        if interaction.guild:
-            private_channel = await get_private_welcome_channel(interaction.guild, interaction.user)
-            await private_channel.send(
-                f"{interaction.user.mention} 👋 This is your private onboarding channel.\n\n"
-                "**Step 1/3:** Choose your main interests:",
+            # If user clicked inside private welcome channel, continue there.
+            if interaction.guild and getattr(interaction.channel, "name", "").startswith("welcome-"):
+                await interaction.followup.send(
+                    "👋 Great! This onboarding is private and only visible to you and admins.\n\n"
+                    "**Step 1/3:** Choose your main interests:",
+                    view=InterestSelectView(),
+                    ephemeral=True
+                )
+                return
+
+            # Otherwise create/find private welcome channel.
+            if interaction.guild:
+                private_channel = await get_private_welcome_channel(interaction.guild, interaction.user)
+                await private_channel.send(
+                    f"{interaction.user.mention} 👋 This is your private onboarding channel.\n\n"
+                    "**Step 1/3:** Choose your main interests:",
+                    view=InterestSelectView(),
+                    allowed_mentions=discord.AllowedMentions(users=True)
+                )
+                await interaction.followup.send(
+                    f"✅ Your private onboarding channel is ready: {private_channel.mention}",
+                    ephemeral=True
+                )
+                return
+
+            # Fallback for DM usage.
+            await interaction.followup.send(
+                "👋 Great! **Step 1/3:** Choose your main interests:",
                 view=InterestSelectView(),
-                allowed_mentions=discord.AllowedMentions(users=True)
-            )
-            await interaction.response.send_message(
-                f"I created your private onboarding channel: {private_channel.mention}",
                 ephemeral=True
             )
-            return
 
-        # Fallback for DM usage.
-        await interaction.response.send_message(
-            "👋 Great! **Step 1/3:** Choose your main interests:",
-            view=InterestSelectView()
-        )
+        except Exception as e:
+            print(f"Start onboarding error: {type(e).__name__}: {e}")
+            await interaction.followup.send(
+                "Something went wrong while starting onboarding. "
+                "Please send any message in the server and I will send your private onboarding link.",
+                ephemeral=True
+            )
 
 
 class IntroductionModal(discord.ui.Modal, title="Post Introduction"):
