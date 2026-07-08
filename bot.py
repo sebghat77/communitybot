@@ -34,6 +34,47 @@ async def lock_private_channels(guild):
             await channel.set_permissions(guild.me, view_channel=True, send_messages=True, read_message_history=True)
 
 
+async def prepare_public_welcome(guild):
+    """Keep #welcome clean: delete old bot messages, lock writing, post one fresh persistent button."""
+    welcome = find_channel(guild, "welcome")
+    if not welcome:
+        return
+
+    try:
+        await welcome.set_permissions(
+            guild.default_role,
+            view_channel=True,
+            send_messages=False,
+            read_message_history=True
+        )
+        await welcome.set_permissions(
+            guild.me,
+            view_channel=True,
+            send_messages=True,
+            read_message_history=True,
+            manage_messages=True
+        )
+    except Exception:
+        pass
+
+    try:
+        async for msg in welcome.history(limit=100):
+            if msg.author == guild.me:
+                try:
+                    await msg.delete()
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    await welcome.send(
+        "👋 Welcome! If you need onboarding, press the button below. "
+        "Your onboarding will happen in a private channel.",
+        embed=build_welcome_embed(),
+        view=StartOnboardingView()
+    )
+
+
 async def delete_project_channels_and_categories(guild):
     """Admin reset: removes all current channels/categories, then setup_server rebuilds structure."""
     for channel in list(guild.channels):
@@ -370,9 +411,13 @@ class SmartOnboardingModal(discord.ui.Modal, title="Final Onboarding Step"):
 
 class StartOnboardingView(discord.ui.View):
     def __init__(self):
-        super().__init__(timeout=300)
+        super().__init__(timeout=None)
 
-    @discord.ui.button(label="Start Onboarding", style=discord.ButtonStyle.primary)
+    @discord.ui.button(
+        label="Start Onboarding",
+        style=discord.ButtonStyle.primary,
+        custom_id="communitybot:start_onboarding"
+    )
     async def start_onboarding(self, interaction: discord.Interaction, button: discord.ui.Button):
         # Answer Discord immediately to avoid "This interaction failed".
         await interaction.response.defer(ephemeral=True)
@@ -554,7 +599,8 @@ async def get_or_create_text_channel(guild, channel_name, category=None, topic=N
 
 
 async def send_onboarding_to_member(member):
-    # Create a private welcome/onboarding channel for this user.
+    # Never post a new message in #welcome when a user joins.
+    # Keep #welcome clean with only one persistent onboarding button.
     private_channel = await get_private_welcome_channel(member.guild, member)
 
     await private_channel.send(
@@ -565,6 +611,7 @@ async def send_onboarding_to_member(member):
         allowed_mentions=discord.AllowedMentions(users=True)
     )
 
+    # DM is only a helper link. If DM is closed, the private channel still exists.
     try:
         await member.send(
             f"Welcome! I created your private onboarding channel in the server: {private_channel.mention}"
@@ -576,6 +623,7 @@ async def send_onboarding_to_member(member):
 @bot.event
 async def on_ready():
     init_db()
+    bot.add_view(StartOnboardingView())
     print(f"Bot is online as {bot.user}")
 
 
@@ -650,10 +698,16 @@ async def on_message(message):
             allowed_mentions=discord.AllowedMentions(users=True)
         )
 
-        await message.reply(
-            f"Please complete onboarding first in your private channel: {private_channel.mention}",
-            mention_author=True
-        )
+        try:
+            await message.reply(
+                f"Please complete onboarding first in your private onboarding channel: {private_channel.mention}",
+                mention_author=True
+            )
+        except Exception:
+            await message.reply(
+                "Please complete onboarding first. I created a private onboarding channel for you.",
+                mention_author=True
+            )
         return
 
     await message.channel.send("Thinking...")
@@ -681,6 +735,7 @@ async def setup_server(ctx):
             await get_or_create_text_channel(ctx.guild, channel_name, category, topic)
 
     await lock_private_channels(ctx.guild)
+    await prepare_public_welcome(ctx.guild)
     await ctx.send("Server setup completed. Use `!join` or go to #welcome.")
 
 
@@ -705,9 +760,14 @@ async def fresh_setup(ctx, confirmation: str = ""):
 
     await lock_private_channels(ctx.guild)
 
-    welcome = find_channel(ctx.guild, "welcome")
-    if welcome:
-        await welcome.send(embed=build_welcome_embed(), view=StartOnboardingView())
+    await prepare_public_welcome(ctx.guild)
+
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def clean_welcome(ctx):
+    await prepare_public_welcome(ctx.guild)
+    await ctx.send("Welcome channel cleaned and refreshed. New users will not create new messages in #welcome.")
 
 
 @bot.command()
@@ -907,7 +967,7 @@ async def project_help(ctx):
         "`!teammate_nudge` — teammate suggestions\n"
         "You can also write: `show my profile`, `recommend me a channel`, `find teammates`.\n\n"
         "**For admins:**\n"
-        "`!setup_server` — create server channels\n`!fresh_setup CONFIRM` — delete old channels and rebuild clean structure\n"
+        "`!setup_server` — create server channels\n`!fresh_setup CONFIRM` — delete old channels and rebuild clean structure\n`!clean_welcome` — clean old welcome bot messages and post a fresh onboarding button\n"
         "`!event_nudge fps Friday PUBG Event` — event nudge\n"
         "`!channel_nudge fps #fps-discussion` — channel nudge\n"
         "`!community_status` — report to #bot-logs\n"
