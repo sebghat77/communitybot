@@ -1,5 +1,17 @@
 # CommunityBot
 
+<p>
+  <img alt="Python" src="https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white">
+  <img alt="Discord.py" src="https://img.shields.io/badge/Discord.py-5865F2?logo=discord&logoColor=white">
+  <img alt="Mistral AI" src="https://img.shields.io/badge/Mistral%20AI-FF7000?logo=mistralai&logoColor=white">
+  <img alt="Flask" src="https://img.shields.io/badge/Flask-000000?logo=flask&logoColor=white">
+  <img alt="SQLite" src="https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white">
+  <img alt="HTML5" src="https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white">
+  <img alt="CSS3" src="https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=white">
+  <img alt="Pytest" src="https://img.shields.io/badge/Pytest-0A9EDC?logo=pytest&logoColor=white">
+  <img alt="GitHub Actions" src="https://img.shields.io/badge/GitHub%20Actions-2088FF?logo=githubactions&logoColor=white">
+</p>
+
 [![Tests](https://github.com/sebghat77/communitybot/actions/workflows/tests.yml/badge.svg)](https://github.com/sebghat77/communitybot/actions/workflows/tests.yml)
 
 **AI-supported Discord community assistant for private onboarding, personalized recommendations, notifications, and project evaluation.**
@@ -18,15 +30,9 @@ CommunityBot was developed as part of the **Cooperation Systems** course at the 
 - Export workflow for evaluation data
 - Environment-based secret management for API keys and bot tokens
 
-## Tech Stack
+## Tech
 
-- **Python**
-- **Discord.py**
-- **Mistral API**
-- **Flask**
-- **SQLite**
-- **REST/API integration**
-- **python-dotenv**
+Python · Discord.py · Mistral API · Flask · SQLite · HTML/CSS · REST API integration · pytest · GitHub Actions
 
 ## Project Structure
 
@@ -232,12 +238,6 @@ I developed and integrated CommunityBot as part of the Cooperation Systems proje
 - evaluation support
 - dashboard and data export
 - integration, debugging, and end-to-end testing
-
-## Current Status
-
-This repository represents an academic prototype and portfolio project. The application can be run locally with personal Discord and Mistral credentials.
-
-Automated tests and GitHub Actions CI are included as part of the engineering workflow.
 
 ## License
 
