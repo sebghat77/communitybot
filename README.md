@@ -1,5 +1,7 @@
 # CommunityBot
 
+[![Tests](https://github.com/sebghat77/communitybot/actions/workflows/tests.yml/badge.svg)](https://github.com/sebghat77/communitybot/actions/workflows/tests.yml)
+
 **AI-supported Discord community assistant for private onboarding, personalized recommendations, notifications, and project evaluation.**
 
 CommunityBot was developed as part of the **Cooperation Systems** course at the University of Duisburg-Essen. The project explores how a Discord bot can help new members understand a community, discover relevant channels and events, and stay engaged over time.
@@ -38,7 +40,10 @@ communitybot/
 ├── dashboard.py          # Local Flask dashboard
 ├── export_evaluation.py  # Evaluation-data export
 ├── config.py             # Environment-based configuration
-├── requirements.txt      # Python dependencies
+├── tests/                # Automated tests for core recommendation logic
+├── .github/workflows/     # GitHub Actions CI workflow
+├── requirements.txt      # Runtime Python dependencies
+├── requirements-dev.txt  # Development/test dependencies
 ├── .env.example          # Example environment configuration
 └── .gitignore
 ```
@@ -190,6 +195,19 @@ python export_evaluation.py
 
 This generates evaluation data that can be used for project analysis and reporting.
 
+## Testing and CI
+
+Automated tests cover core recommendation and discovery behavior. GitHub Actions runs the test suite on every push to `main` and on pull requests.
+
+Run the tests locally with:
+
+```bash
+pip install -r requirements-dev.txt
+pytest -q
+```
+
+The CI workflow also compiles the Python source before running the tests to catch syntax errors early.
+
 ## Privacy and Security
 
 The project is designed with basic privacy and security safeguards in mind:
@@ -219,7 +237,7 @@ I developed and integrated CommunityBot as part of the Cooperation Systems proje
 
 This repository represents an academic prototype and portfolio project. The application can be run locally with personal Discord and Mistral credentials.
 
-Automated tests and CI are planned as the next engineering improvements.
+Automated tests and GitHub Actions CI are included as part of the engineering workflow.
 
 ## License
 
