@@ -1,8 +1,21 @@
+import re
+
 from config import DISCOVERABLE_CATEGORIES, IGNORED_CHANNEL_KEYWORDS, INTEREST_KEYWORDS, CHANNEL_FALLBACK_MAP
 
 
 def normalize(text):
     return str(text or "").lower().replace("_", "-").strip()
+
+
+def contains_keyword(text, keyword):
+    text = normalize(text)
+    keyword = normalize(keyword)
+
+    if not keyword:
+        return False
+
+    pattern = rf"(?<![a-z0-9]){re.escape(keyword)}(?![a-z0-9])"
+    return re.search(pattern, text) is not None
 
 
 def is_ignored_channel(channel):
@@ -38,7 +51,7 @@ def detect_interest_from_text(text):
 
     for interest, keywords in INTEREST_KEYWORDS.items():
         for keyword in keywords:
-            if keyword in text:
+            if contains_keyword(text, keyword):
                 return interest
 
     return None
@@ -51,10 +64,13 @@ def channel_matches_interest(channel, interest):
 
     keywords = INTEREST_KEYWORDS.get(interest, [interest])
 
-    if interest in name or interest in topic:
+    if contains_keyword(name, interest) or contains_keyword(topic, interest):
         return True
 
-    return any(keyword in name or keyword in topic for keyword in keywords)
+    return any(
+        contains_keyword(name, keyword) or contains_keyword(topic, keyword)
+        for keyword in keywords
+    )
 
 
 def get_dynamic_recommendations(guild, persona):
